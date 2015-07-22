@@ -8,7 +8,7 @@
  *
  * License: http://chilts.mit-license.org/2014/
  *
- **/
+**/
 
 var crypto = require('crypto')
 
@@ -57,7 +57,7 @@ Queue.prototype.ensureIndexes = function(callback) {
         if (err) return callback(err)
         self.col.createIndex({ ack : 1 }, { unique : true, sparse : true }, function(err) {
             if (err) return callback(err)
-            callback(err, indexname)
+            callback(null, indexname)
         })
     })
 }
@@ -114,6 +114,7 @@ Queue.prototype.get = function(opts, callback) {
             payload : msg.value.payload,
             tries   : msg.value.tries,
         }
+        
         // if we have a deadQueue, then check the tries, else don't
         if ( self.deadQueue ) {
             // check the tries
