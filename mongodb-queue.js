@@ -114,6 +114,7 @@ Queue.prototype.get = function(opts, callback) {
             payload : msg.value.payload,
             tries   : msg.value.tries,
         }
+        
         // if we have a deadQueue, then check the tries, else don't
         if ( self.deadQueue ) {
             // check the tries
