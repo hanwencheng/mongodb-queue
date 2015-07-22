@@ -8,7 +8,7 @@
  *
  * License: http://chilts.mit-license.org/2014/
  *
-**/
+ **/
 
 var crypto = require('crypto')
 
@@ -22,7 +22,7 @@ function now() {
 }
 
 function nowPlusSecs(secs) {
-  return (new Date(Date.now() + secs * 1000)).toISOString()
+    return (new Date(Date.now() + secs * 1000)).toISOString()
 }
 
 module.exports = function(mongoDbClient, name, opts) {
@@ -53,11 +53,11 @@ function Queue(mongoDbClient, name, opts) {
 Queue.prototype.ensureIndexes = function(callback) {
     var self = this
 
-    self.col.ensureIndex({ deleted : 1, visible : 1, _id : 1 }, function(err) {
+    self.col.createIndex({ deleted : 1, visible : 1, _id : 1 }, function(err, indexname) {
         if (err) return callback(err)
-        self.col.ensureIndex({ ack : 1 }, { unique : true, sparse : true }, function(err) {
+        self.col.createIndex({ ack : 1 }, { unique : true, sparse : true }, function(err) {
             if (err) return callback(err)
-            callback()
+            callback(err, indexname)
         })
     })
 }
@@ -73,9 +73,9 @@ Queue.prototype.add = function(payload, opts, callback) {
         visible  : delay ? nowPlusSecs(delay) : now(),
         payload  : payload,
     }
-    self.col.insert(msg, function(err, results) {
+    self.col.insertOne(msg, function(err, results) {
         if (err) return callback(err)
-        callback(null, '' + results[0]._id)
+        callback(null, '' + results.ops[0]._id)
     })
 }
 
@@ -104,17 +104,16 @@ Queue.prototype.get = function(opts, callback) {
 
     self.col.findAndModify(query, sort, update, { new : true }, function(err, msg) {
         if (err) return callback(err)
-        if (!msg) return callback()
+        if (!msg.value) return callback()
 
         // convert to an external representation
         msg = {
             // convert '_id' to an 'id' string
-            id      : '' + msg._id,
-            ack     : msg.ack,
-            payload : msg.payload,
-            tries   : msg.tries,
+            id      : '' + msg.value._id,
+            ack     : msg.value.ack,
+            payload : msg.value.payload,
+            tries   : msg.value.tries,
         }
-
         // if we have a deadQueue, then check the tries, else don't
         if ( self.deadQueue ) {
             // check the tries
@@ -156,12 +155,12 @@ Queue.prototype.ping = function(ack, opts, callback) {
             visible : nowPlusSecs(visibility)
         }
     }
-    self.col.findAndModify(query, undefined, update, { new : true }, function(err, msg, blah) {
+    self.col.findOneAndUpdate(query, update, { new : true }, function(err, msg, blah) {
         if (err) return callback(err)
-        if ( !msg ) {
+        if ( !msg.value ) {
             return callback(new Error("Queue.ping(): Unidentified ack  : " + ack))
         }
-        callback(null, '' + msg._id)
+        callback(null, '' + msg.value._id)
     })
 }
 
@@ -178,12 +177,12 @@ Queue.prototype.ack = function(ack, callback) {
             deleted : now(),
         }
     }
-    self.col.findAndModify(query, undefined, update, { new : true }, function(err, msg, blah) {
+    self.col.findOneAndUpdate(query, update, { new : true }, function(err, msg, blah) {
         if (err) return callback(err)
-        if ( !msg ) {
+        if ( !msg.value ) {
             return callback(new Error("Queue.ack(): Unidentified ack : " + ack))
         }
-        callback(null, '' + msg._id)
+        callback(null, '' + msg.value._id)
     })
 }
 
@@ -194,7 +193,7 @@ Queue.prototype.clean = function(callback) {
         deleted : { $exists : true },
     }
 
-    self.col.remove(query, callback)
+    self.col.deleteMany(query, callback)
 }
 
 Queue.prototype.total = function(callback) {
