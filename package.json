@@ -1,15 +1,16 @@
 {
   "name": "mongodb-queue",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Message queues which uses MongoDB.",
   "main": "mongodb-queue.js",
   "scripts": {
     "test": "set -e; for FILE in test/*.js; do node $FILE; done"
   },
-  "dependencies": {},
+  "dependencies": {
+    "mongodb": "stable"
+  },
   "devDependencies": {
     "tape": "^2.14.0",
-    "mongodb": "^2.0.39",
     "async": "^0.9.0"
   },
   "homepage": "https://github.com/chilts/mongodb-queue",
@@ -26,6 +27,10 @@
     "email": "andychilton@gmail.com",
     "url": "http://chilts.org/"
   },
+  "contributors": [
+    { "name": "Hanwen Cheng",
+      "email": "heawen.cheng@gmail.com>" }
+    ],
   "license": "MIT",
   "keywords": [
     "mongodb",
